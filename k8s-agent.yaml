@@ -1,0 +1,52 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-dsm
+  namespace: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pod-dsm
+  template:
+    metadata:
+      labels:
+        app: pod-dsm
+    spec:
+      containers:
+        - name: agent
+          image: agent:v2021072604
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 8384
+          volumeMounts:
+          - name: app-dir
+            mountPath: /mountpath
+        - name: ubuntu
+          image: ubuntu:20.04
+          imagePullPolicy: IfNotPresent 
+          command: ["/bin/sh","-c","touch /tmp/hello.txt;while true;do /bin/echo $(date +%T) >> /tmp/hello.txt;sleep 3;done;"]
+          ports:
+          - containerPort: 8988
+          volumeMounts:
+          - name: app-dir
+            mountPath: /mountpath
+      volumes:
+        - name: app-dir
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-agent
+  namespace: agent
+spec:
+  selector:
+    app: pod-dsm
+  type: NodePort
+  ports:
+  - port: 8384
+    targetPort: 8384
+    nodePort: 31838
